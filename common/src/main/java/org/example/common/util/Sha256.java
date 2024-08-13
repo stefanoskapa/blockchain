@@ -1,16 +1,16 @@
-package org.example.util;
+package org.example.common.util;
 
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class Sha512 {
+public class Sha256 {
     private static final MessageDigest md;
 
     static {
         try {
-            md = MessageDigest.getInstance("SHA-512");
+            md = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -23,6 +23,10 @@ public class Sha512 {
             hexString.append(String.format("%02x", b));
         }
         return hexString.toString();
+    }
+
+    public static String doubleHash(String input) {
+        return hash(hash(input));
     }
 
 
