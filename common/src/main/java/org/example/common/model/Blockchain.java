@@ -27,8 +27,11 @@ public class Blockchain {
         return blockList.size();
     }
 
-    public Block getTip() {
-        return blockList.getLast();
+    public String getTipHash() {
+        if (blockList.isEmpty())
+            return Constants.GENESIS_PREV_HASH;
+
+        return blockList.getLast().getHash();
     }
 
     @Override

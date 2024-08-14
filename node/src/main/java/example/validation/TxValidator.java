@@ -16,63 +16,7 @@ public class TxValidator {
     public TxValidator(UtxoDB db) {
         this.db = db;
     }
-    /**
-     * Validates a transaction as a whole.
-     *
-     * 1. Check if the txInputs all belong to the sender
-     * 2. Check if the txInputs add up to an equal or greater Transaction amount
-     * 3. Check if the sum of txOutputs is equal to the sum of txInputs
-     * 4. Check if the sum of txOutputs is equal or greater than the transaction amount (redundant)
-     * 7. Check if transaction has been signed by the sender
-     * 8. Check if transaction has been hashed correctly
-     *
-     * @param transaction The transaction to validate
-     * @return True if transaction is valid, otherwise false
-     */
-    public boolean validateTx(Transaction transaction) {
-        System.out.println("Validating transaction " + transaction.getTransactionId());
 
-        boolean doesSenderOwnInputs = validateAllTransactionInputOwner(transaction);
-        System.out.println("\tInput ownership: " + (doesSenderOwnInputs ? "Valid" : "Invalid"));
-        if (!doesSenderOwnInputs) {
-            return false;
-        }
-
-        if (!(transaction.getSender() == null && transaction.getAmount() == Constants.MINER_REWARD)) {
-
-            boolean isAmountEnough = validateTxInputSumAmounts(transaction);
-            System.out.println("\tInput sufficiency: " + (isAmountEnough ? "Valid" : "Invalid"));
-            if (!isAmountEnough) {
-                transaction.getInputs().forEach(System.out::println);
-                transaction.getOutputs().forEach(System.out::println);
-                return false;
-            }
-
-            boolean ioBalance = validateTxIOBalance(transaction);
-            System.out.println("\ttxInput-txOutput balance: " + (ioBalance ? "Valid" : "invalid"));
-            if (!ioBalance) {
-                return false;
-            }
-        }
-
-        boolean isValidHash = validateTxHash(transaction);
-        System.out.println("\tTransaction Hash: " + (isValidHash ? "Valid" : "Invalid"));
-        if (!isValidHash) {
-            return false;
-        }
-
-        if (!(transaction.getSender() == null && transaction.getAmount() == Constants.MINER_REWARD)) {
-            boolean sig = validateTxSignature(transaction);
-            System.out.println("\tTransaction Signature: " + (sig ? "Valid" : "Invalid"));
-            if (!sig) {
-                return false;
-            }
-
-        }
-
-        return true;
-
-    }
 
 
 
