@@ -1,6 +1,7 @@
 package org.example.common.model;
 
 import org.example.common.util.ECC;
+import org.example.common.util.Sha256;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -36,4 +37,6 @@ public class Wallet {
     public void setPublicKey(PublicKey publicKey) {
         this.publicKey = publicKey;
     }
+
+
 }

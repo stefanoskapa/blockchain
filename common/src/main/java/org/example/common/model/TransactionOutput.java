@@ -38,4 +38,12 @@ public class TransactionOutput {
     public void setAmount(double amount) {
         this.amount = amount;
     }
+
+    @Override
+    public String toString() {
+        return "TransactionOutput{" +
+                "receiver=" + receiver +
+                ", amount=" + amount +
+                '}';
+    }
 }

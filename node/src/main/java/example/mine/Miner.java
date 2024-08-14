@@ -1,6 +1,7 @@
 package example.mine;
 
-import example.db.UTXO;
+import example.db.UtxoDB;
+import example.validation.TxValidator;
 import org.example.common.model.*;
 import org.example.common.util.ECC;
 import org.example.common.util.Sha256;
@@ -17,12 +18,21 @@ public class Miner {
 
     private final KeyPair minerWallet = ECC.generateKeyPair();
 
-    private Blockchain blockchain;
+    private final Blockchain blockchain;
+    private final UtxoDB db;
+
+    private final TxValidator txValidator;
 
     private List<Transaction> memPool = new ArrayList<>();
 
     public Miner(Blockchain blockchain) {
         this.blockchain = blockchain;
+        this.db = new UtxoDB();
+        this.txValidator = new TxValidator(db);
+    }
+
+    public double getWalletBalance(PublicKey publicKey) {
+        return db.getBalance(publicKey);
     }
 
     public PublicKey getWallet() {
@@ -35,9 +45,14 @@ public class Miner {
 
     public Block createBlock() {
         if (blockchain.size() == 0) {
-            throw new IllegalStateException("Blockchain is empty");
+            memPool = new ArrayList<>();
+            return new Block(getWallet());
         }
         Block result = new Block(blockchain.getTip().getHash(), memPool, minerWallet.getPublic());
+
+        for (Transaction t : result.getTransactions()) {
+            generateInputsAndOutputs(t);
+        }
 
 
         return result;
@@ -47,8 +62,6 @@ public class Miner {
         memPool.add(transaction);
     }
     public void mine(Block block) {
-        System.out.println("[1] Validating transactions... ");
-
         System.out.println("[ Mining... ]");
         block.setHash(generateHash(block));
         System.out.println("Block mined: " + block);
@@ -76,30 +89,70 @@ public class Miner {
 
     private boolean isBlock0(Block block) {
 
-//        System.out.println(block.getPrevHash().equals(Constants.GENESIS_PREV_HASH));
-//        System.out.println(block.getTransactions().size() == 1);
-//        System.out.println(block.getTransactions().size());
-//        System.out.println(block.getTransactions().get(0).getAmount() == Constants.MINER_REWARD);
         return block.getPrevHash().equals(Constants.GENESIS_PREV_HASH) &&
                 block.getTransactions().size() == 1 &&
                 block.getTransactions().get(0).getAmount() == Constants.MINER_REWARD;
     }
 
-    public void merge(Block block) {
+
+
+    public boolean merge(Block block) {
+
         if (isBlock0(block)) {
             var tra = block.getTransactions().get(0);
-            UTXO.storeUTXO(tra.getTransactionId(),tra.getOutputs().get(0));
+            db.storeUTXO(tra.getTransactionId(),tra.getOutputs().get(0));
             blockchain.add(block);
             System.out.println("Genesis block created!");
         } else {
+            System.out.println("[ Validating... ]");
+            // validate all transactions
             for (var transaction : block.getTransactions()) {
+                if (!txValidator.validateTx(transaction)) {
+                    System.out.println("Invalid transaction: " + transaction.getTransactionId());
+                    System.out.println("Merge failed!");
+                    return false;
+                }
+            }
+            // consume txInputs and store txOutputs
+            for (var transaction : block.getTransactions()) {
+                // consume
+                for (var input: transaction.getInputs()) {
+                    db.removeUTXO(input.getPrevTransactionId(),input.getOutputIndex());
+                }
+                // store
                 for (var utxo: transaction.getOutputs()) {
-                    UTXO.storeUTXO(transaction.getTransactionId(), utxo);
+                    db.storeUTXO(transaction.getTransactionId(), utxo);
                 }
             }
             blockchain.add(block);
         }
-        memPool = new ArrayList<>();
+
+        System.out.println("Block " + block.getHash() + " merged!");
+
+        return true;
+    }
+
+    private void generateInputsAndOutputs(Transaction transaction) {
+        List<TransactionInput> necessaryInputs = db.getTxInputsForWalletForAmount(transaction.getSender(), transaction.getAmount());
+            if (transaction.getSender() == null || necessaryInputs == null) {
+                return;
+            }
+
+
+
+        transaction.getInputs().addAll(necessaryInputs);
+        double sum = 0;
+        for (var input : necessaryInputs) {
+            sum += db.getTransactionInputAmount(input);
+        }
+
+        double change = sum - transaction.getAmount();
+
+        var toReceiver = new TransactionOutput(transaction.getReceiver(), transaction.getAmount());
+        var toSender = new TransactionOutput(transaction.getSender(), change);
+
+        transaction.getOutputs().add(toReceiver);
+        transaction.getOutputs().add(toSender);
     }
 
 

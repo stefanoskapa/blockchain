@@ -17,15 +17,15 @@ public class Transaction implements Serializable {
     private final double amount;
     private final byte[] signature;
 
-    private List<TransactionInput> inputs = new ArrayList<>();
-    private List<TransactionOutput> outputs = new ArrayList<>();
+    private final List<TransactionInput> inputs = new ArrayList<>();
+    private final List<TransactionOutput> outputs = new ArrayList<>();
 
     public Transaction(PublicKey sender, PublicKey receiver, double amount, byte[] signature) {
         this.sender = sender;
         this.receiver = receiver;
         this.amount = amount;
         this.signature = signature;
-        this.transactionId = Sha256.doubleHash(sender == null ? "" : sender.toString() + receiver.toString() + amount);
+        this.transactionId = Sha256.hash((sender == null ? "" : sender.toString() )+ receiver.toString() + amount);
     }
 
     public String getTransactionId() {
@@ -64,4 +64,6 @@ public class Transaction implements Serializable {
     public void addOutput(TransactionOutput output) {
         this.outputs.add(output);
     }
+
+
 }

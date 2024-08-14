@@ -35,12 +35,12 @@ public class Blockchain {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("< BLOCKCHAIN START >\n");
+        sb.append("--- BLOCKCHAIN START ---\n");
         for (int i = 0; i < blockList.size(); i++) {
             sb.append(i).append(" : ");
             sb.append(blockList.get(i).toString()).append("\n");
         }
-        sb.append("< BLOCKCHAIN END >\n");
+        sb.append("--- BLOCKCHAIN END ---\n");
         return sb.toString();
     }
 }
